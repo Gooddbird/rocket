@@ -88,7 +88,7 @@ void Timer::resetArriveTime() {
   auto it = tmp.begin();
   int64_t inteval = 0;
   if (it->second->getArriveTime() > now) {
-    // inteval = it->second->getArriveTime() - now;
+    inteval = it->second->getArriveTime() - now;
   } else {
     inteval = 100;
   }
