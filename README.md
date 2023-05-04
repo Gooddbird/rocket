@@ -79,7 +79,7 @@ rocket 同样是基于主从 Reactor 架构，底层采用 epoll 实现 IO 多�
 4.3 编解码模块测试
 
 5. RPC 通信模块封装
-5.1 RpcController 以及 RcpClousre 等基础类
+5.1 RpcController 以及 RcpClosure 等基础类
 5.2 RpcDispatcher 分发器
 5.3 RpcChannel
 5.4 RpcAsyncChannel
@@ -238,6 +238,23 @@ onTimer();    // 当发生了 IO 事件之后，需要执行的方法
 reserArriveTime()
 
 multimap 存储 TimerEvent <key(arrivetime), TimerEvent>
+```
+
+#### 2.5 IO 线程
+创建一个IO 线程，他会帮我们执行：
+1. 创建一个新线程（pthread_create）
+2. 在新线程里面 创建一个 EventLoop，完成初始化
+3. 开启 loop
+```
+class {
+
+
+
+ pthread_t m_thread;
+ pid_t m_thread_id;
+ EventLoop event_loop;
+}
+
 ```
 
 
