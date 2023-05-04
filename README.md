@@ -49,6 +49,48 @@ rocket 同样是基于主从 Reactor 架构，底层采用 epoll 实现 IO 多�
 - 脚手架搭建
 - 简单性能测试
 
+```
+1. 环境安装与项目开发
+1.1 环境搭建和依赖库安装
+1.2 日志模块开发
+1.3 配置模块开发
+
+2. EventLoop 模块封装
+2.1 EventLoop 核心类构建
+2.2 FdEvent 封装以及测试
+2.3 定时器 Timer
+2.4 主从 Reactor 
+2.5 EventLoop 模块整体测试
+
+3. Tcp 模块封装
+3.1 TcpBuffer
+3.2 TcpConnection 
+3.3 TcpServer (一)
+3.4 TcpServer (二)
+3.4 TcpClient
+3.5 Tcp 模块测试 (一)
+3.5 Tcp 模块测试 (二)
+
+
+
+4. RPC 协议封装
+4.1 TinyPB 协议编码
+4.2 TinyPB 协议解码
+4.3 编解码模块测试
+
+5. RPC 通信模块封装
+5.1 RpcController 以及 RcpClousre 等基础类
+5.2 RpcDispatcher 分发器
+5.3 RpcChannel
+5.4 RpcAsyncChannel
+5.5 Rpc 模块集成测试
+
+6. RPC 脚手架封装
+6.1 代码生成器开发
+6.2 项目的构建与测试
+
+```
+
 
 ## 2. 前置准备
 ### 2.1 环境搭建
@@ -168,3 +210,35 @@ void loop() {
 mainReactor由主线程运行，他作用如下：通过epoll监听listenfd的可读事件，当可读事件发生后，调用accept函数获取clientfd，然后随机取出一个subReactor，将cliednfd的读写事件注册到这个subReactor的epoll上即可。也就是说，mainReactor只负责建立连接事件，不进行业务处理，也不关心已连接套接字的IO事件。
 
 subReactor通常有多个，每个subReactor由一个线程来运行。subReactor的epoll中注册了clientfd的读写事件，当发生IO事件后，需要进行业务处理。
+
+#### 2.4.1 TimerEvent 定时任务
+```
+1. 指定时间点 arrive_time
+2. interval, ms。
+3. is_repeated 
+4. is_cancled
+5. task
+
+
+cancle()
+cancleRepeated()
+```
+
+#### 2.4.2 Timer
+定时器，他是一个 TimerEvent 的集合。
+Timer 继承 FdEvent
+```
+
+addTimerEvent();
+deleteTimerEvent();
+
+onTimer();    // 当发生了 IO 事件之后，需要执行的方法
+
+
+reserArriveTime()
+
+multimap 存储 TimerEvent <key(arrivetime), TimerEvent>
+```
+
+
+
