@@ -37,7 +37,7 @@ void Timer::onTimer() {
   std::vector<TimerEvent::s_ptr> tmps;
   std::vector<std::pair<int64_t, std::function<void()>>> tasks;
 
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
   auto it = m_pending_events.begin();
 
   for (it = m_pending_events.begin(); it != m_pending_events.end(); ++it) {
@@ -75,7 +75,7 @@ void Timer::onTimer() {
 }
 
 void Timer::resetArriveTime() {
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
   auto tmp = m_pending_events;
   lock.unlock();
 
@@ -113,7 +113,7 @@ void Timer::resetArriveTime() {
 void Timer::addTimerEvent(TimerEvent::s_ptr event) {
   bool is_reset_timerfd = false;
 
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
   if (m_pending_events.empty()) {
     is_reset_timerfd = true;
   } else {
@@ -135,7 +135,7 @@ void Timer::addTimerEvent(TimerEvent::s_ptr event) {
 void Timer::deleteTimerEvent(TimerEvent::s_ptr event) {
   event->setCancled(true);
 
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
 
   auto begin = m_pending_events.lower_bound(event->getArriveTime());
   auto end = m_pending_events.upper_bound(event->getArriveTime());

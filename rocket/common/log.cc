@@ -85,7 +85,7 @@ std::string LogEvent::toString() {
 
 
 void Logger::pushLog(const std::string& msg) {
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
   m_buffer.push(msg);
   lock.unlock();
 
@@ -94,7 +94,7 @@ void Logger::pushLog(const std::string& msg) {
 
 void Logger::log() {
 
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
   std::queue<std::string> tmp;
   m_buffer.swap(tmp);
 

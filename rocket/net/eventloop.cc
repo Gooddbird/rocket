@@ -34,6 +34,7 @@
     if (rt == -1) { \
       ERRORLOG("failed epoll_ctl when add fd, errno=%d, error=%s", errno, strerror(errno)); \
     } \
+    m_listen_fds.erase(event->getFd()); \
     DEBUGLOG("delete event success, fd[%d]", event->getFd()); \
 
 namespace rocket {
@@ -109,7 +110,7 @@ void EventLoop::initWakeUpFdEevent() {
 
 void EventLoop::loop() {
   while(!m_stop_flag) {
-    ScopeMutext<Mutex> lock(m_mutex); 
+    ScopeMutex<Mutex> lock(m_mutex); 
     std::queue<std::function<void()>> tmp_tasks; 
     m_pending_tasks.swap(tmp_tasks); 
     lock.unlock();
@@ -198,7 +199,7 @@ void EventLoop::deleteEpollEvent(FdEvent* event) {
 }
 
 void EventLoop::addTask(std::function<void()> cb, bool is_wake_up /*=false*/) {
-  ScopeMutext<Mutex> lock(m_mutex);
+  ScopeMutex<Mutex> lock(m_mutex);
   m_pending_tasks.push(cb);
   lock.unlock();
 
