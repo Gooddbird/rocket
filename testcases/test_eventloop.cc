@@ -11,6 +11,7 @@
 #include "rocket/net/eventloop.h"
 #include "rocket/net/timer_event.h"
 #include "rocket/net/io_thread.h"
+#include "rocket/net/io_thread_group.h"
 
 
 void test_io_thread() {
@@ -59,14 +60,25 @@ void test_io_thread() {
   );
 
 
-  rocket::IOThread io_thread;
+  // rocket::IOThread io_thread;
 
 
-  io_thread.getEventLoop()->addEpollEvent(&event);
-  io_thread.getEventLoop()->addTimerEvent(timer_event);
-  io_thread.start();
+  // io_thread.getEventLoop()->addEpollEvent(&event);
+  // io_thread.getEventLoop()->addTimerEvent(timer_event);
+  // io_thread.start();
 
-  io_thread.join();
+  // io_thread.join();
+
+  rocket::IOThreadGroup io_thread_group(2);
+  rocket::IOThread* io_thread = io_thread_group.getIOThread();
+  io_thread->getEventLoop()->addEpollEvent(&event);
+  io_thread->getEventLoop()->addTimerEvent(timer_event);
+
+  rocket::IOThread* io_thread2 = io_thread_group.getIOThread();
+  io_thread2->getEventLoop()->addTimerEvent(timer_event);
+
+  io_thread_group.start();
+  io_thread_group.join();
 
 }
 

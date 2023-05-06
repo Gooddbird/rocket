@@ -61,6 +61,10 @@ enum LogLevel {
 };
 
 
+std::string LogLevelToString(LogLevel level);
+
+LogLevel StringToLogLevel(const std::string& log_level);
+
 
 class Logger {
  public:
@@ -89,11 +93,6 @@ class Logger {
 
 };
 
-
-
-std::string LogLevelToString(LogLevel level);
-
-LogLevel StringToLogLevel(const std::string& log_level);
 
 class LogEvent {
  public:
