@@ -15,6 +15,11 @@ enum TcpState {
   Closed = 4,
 };
 
+enum TcpType {
+  TcpServerType = 1,
+  TcpClientType = 2,
+};
+
 class TcpConnection {
  public:
 
@@ -23,6 +28,7 @@ class TcpConnection {
 
  public:
   TcpConnection(IOThread* io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr);
+  TcpConnection(EventLoop* io_thread, int fd, int buffer_size, NetAddr::s_ptr peer_addr);
 
   ~TcpConnection();
 
@@ -41,13 +47,22 @@ class TcpConnection {
   // 服务器主动关闭连接
   void shutdown();
 
+  void listenWrite();
+
+  void listenRead();
+  
+  void setType(TcpType type) { m_type = type;}
+
+
  private:
 
   IOThread* m_io_thread {NULL};   // 代表持有该连接的 IO 线程
 
+  EventLoop* m_event_loop {NULL};   // 代表持有该连接的 IO 线程
+
   NetAddr::s_ptr m_local_addr;
   NetAddr::s_ptr m_peer_addr;
-
+ public:
   TcpBuffer::s_ptr m_in_buffer;   // 接收缓冲区
   TcpBuffer::s_ptr m_out_buffer;  // 发送缓冲区
 
@@ -57,6 +72,11 @@ class TcpConnection {
   TcpState m_state;
 
   int m_fd {0};
+
+  TcpType m_type {TcpServerType};
+  std::string* m_res {NULL};
+  std::function<void(std::string&)> m_write_done {nullptr};
+  std::function<void(std::string&)> m_read_done {nullptr};
   
 };
 

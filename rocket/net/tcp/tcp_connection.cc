@@ -13,8 +13,19 @@ TcpConnection::TcpConnection(IOThread* io_thread, int fd, int buffer_size, NetAd
 
   m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
   m_fd_event->setNonBlock();
-  m_fd_event->listen(FdEvent::IN_EVENT, std::bind(&TcpConnection::onRead, this));
-  io_thread->getEventLoop()->addEpollEvent(m_fd_event);
+  m_event_loop = m_io_thread->getEventLoop();
+  listenRead();
+
+}
+
+TcpConnection::TcpConnection(EventLoop* loop, int fd, int buffer_size, NetAddr::s_ptr peer_addr)
+    : m_event_loop(loop), m_peer_addr(peer_addr), m_state(NotConnected), m_fd(fd) {
+    
+  m_in_buffer = std::make_shared<TcpBuffer>(buffer_size);
+  m_out_buffer = std::make_shared<TcpBuffer>(buffer_size);
+
+  m_fd_event = FdEventGroup::GetFdEventGroup()->getFdEvent(fd);
+  m_fd_event->setNonBlock();
 
 }
 
@@ -62,6 +73,7 @@ void TcpConnection::onRead() {
     //TODO: 
     INFOLOG("peer closed, peer addr [%s], clientfd [%d]", m_peer_addr->toString().c_str(), m_fd);
     clear();
+    return;
   }
 
   if (!is_read_all) {
@@ -74,7 +86,8 @@ void TcpConnection::onRead() {
 }
 
 void TcpConnection::excute() {
-  // 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
+  if (m_type == TcpServerType) {
+// 将 RPC 请求执行业务逻辑，获取 RPC 响应, 再把 RPC 响应发送回去
   std::vector<char> tmp;
   int size = m_in_buffer->readAble();
   tmp.resize(size);
@@ -89,10 +102,37 @@ void TcpConnection::excute() {
 
   m_out_buffer->writeToBuffer(msg.c_str(), msg.length());
 
-  m_fd_event->listen(FdEvent::OUT_EVENT, std::bind(&TcpConnection::onWrite, this));
-  m_io_thread->getEventLoop()->addEpollEvent(m_fd_event);
+  listenWrite();
 
+  } else {
+    std::vector<char> tmp;
+    int size = m_in_buffer->readAble();
+    tmp.resize(size);
+    m_in_buffer->readFromBuffer(tmp, size);
+
+    std::string msg;
+    for (size_t i = 0; i < tmp.size(); ++i) {
+      msg += tmp[i];
+    }
+
+    INFOLOG("success get response[%s] from [%s]", msg.c_str(), m_peer_addr->toString().c_str());
+
+    if (m_read_done) {
+      m_read_done(msg);
+    }
+  }
 }
+
+void TcpConnection::listenWrite() {
+  m_fd_event->listen(FdEvent::OUT_EVENT, std::bind(&TcpConnection::onWrite, this));
+  m_event_loop->addEpollEvent(m_fd_event);
+}
+
+void TcpConnection::listenRead() {
+  m_fd_event->listen(FdEvent::IN_EVENT, std::bind(&TcpConnection::onRead, this));
+  m_event_loop->addEpollEvent(m_fd_event);
+}
+
 
 void TcpConnection::onWrite() {
   // 将当前 out_buffer 里面的数据全部发送给 client
@@ -127,7 +167,11 @@ void TcpConnection::onWrite() {
   }
   if (is_write_all) {
     m_fd_event->cancle(FdEvent::OUT_EVENT);
-    m_io_thread->getEventLoop()->addEpollEvent(m_fd_event);
+    m_event_loop->addEpollEvent(m_fd_event);
+    std::string tmp;
+    if (m_write_done) {
+      m_write_done(tmp);
+    }
   }
 }
 
@@ -144,7 +188,7 @@ void TcpConnection::clear() {
   if (m_state == Closed) {
     return;
   }
-  m_io_thread->getEventLoop()->deleteEpollEvent(m_fd_event);
+  m_event_loop->deleteEpollEvent(m_fd_event);
 
   m_state = Closed;
 
