@@ -62,6 +62,7 @@ void TcpConnection::onRead() {
     //TODO: 
     INFOLOG("peer closed, peer addr [%s], clientfd [%d]", m_peer_addr->toString().c_str(), m_fd);
     clear();
+    return;
   }
 
   if (!is_read_all) {
@@ -144,6 +145,9 @@ void TcpConnection::clear() {
   if (m_state == Closed) {
     return;
   }
+  m_fd_event->cancle(FdEvent::IN_EVENT);
+  m_fd_event->cancle(FdEvent::OUT_EVENT);
+
   m_io_thread->getEventLoop()->deleteEpollEvent(m_fd_event);
 
   m_state = Closed;

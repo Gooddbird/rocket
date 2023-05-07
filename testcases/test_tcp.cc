@@ -5,7 +5,7 @@
 
 void test_tcp_server() {
 
-  rocket::IPNetAddr::s_ptr addr = std::make_shared<rocket::IPNetAddr>("127.0.0.1", 12345);
+  rocket::IPNetAddr::s_ptr addr = std::make_shared<rocket::IPNetAddr>("127.0.0.1", 12346);
 
   DEBUGLOG("create addr %s", addr->toString().c_str());
 
