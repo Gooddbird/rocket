@@ -33,6 +33,8 @@ class EventLoop {
 
   void addTimerEvent(TimerEvent::s_ptr event);
 
+  bool isLooping();
+
  public:
   static EventLoop* GetCurrentEventLoop();
 
@@ -62,6 +64,8 @@ class EventLoop {
   Mutex m_mutex;
 
   Timer* m_timer {NULL};
+
+  bool m_is_looping {false};
 
 };
 
