@@ -20,7 +20,6 @@ TcpConnection::TcpConnection(EventLoop* event_loop, int fd, int buffer_size, Net
 
   if (m_connection_type == TcpConnectionByServer) {
     listenRead();
-    m_dispatcher = std::make_shared<RpcDispatcher>();
   }
 
 }
@@ -100,7 +99,7 @@ void TcpConnection::excute() {
       // message->m_pb_data = "hello. this is rocket rpc test data";
       // message->m_req_id = result[i]->m_req_id;
 
-      m_dispatcher->dispatch(result[i], message, this);
+      RpcDispatcher::GetRpcDispatcher()->dispatch(result[i], message, this);
       replay_messages.emplace_back(message);
     }
 
