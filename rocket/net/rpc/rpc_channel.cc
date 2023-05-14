@@ -13,17 +13,18 @@
 namespace rocket {
 
 RpcChannel::RpcChannel(NetAddr::s_ptr peer_addr) : m_peer_addr(peer_addr) {
-
+  m_client = std::make_shared<TcpClient>(m_peer_addr);
 }
 
 RpcChannel::~RpcChannel() {
-
+  INFOLOG("~RpcChannel");
 }
 
 void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
                         google::protobuf::RpcController* controller, const google::protobuf::Message* request,
                         google::protobuf::Message* response, google::protobuf::Closure* done) {
 
+  
   std::shared_ptr<rocket::TinyPBProtocol> req_protocol = std::make_shared<rocket::TinyPBProtocol>();
 
   RpcController* my_controller = dynamic_cast<RpcController*>(controller);
@@ -42,6 +43,14 @@ void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
   req_protocol->m_method_name = method->full_name();
   INFOLOG("%s | call method name [%s]", req_protocol->m_msg_id.c_str(), req_protocol->m_method_name.c_str());
 
+  if (!m_is_init) {
+
+    std::string err_info = "RpcChannel not init";
+    my_controller->SetError(ERROR_RPC_CHANNEL_INIT, err_info);
+    ERRORLOG("%s | %s, RpcChannel not init ", req_protocol->m_msg_id.c_str(), err_info.c_str());
+    return;
+  }
+
   // requeset 的序列化
   if (!request->SerializeToString(&(req_protocol->m_pb_data))) {
     std::string err_info = "failde to serialize";
@@ -50,30 +59,77 @@ void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
     return;
   }
 
-  TcpClient client(m_peer_addr);
+  s_ptr channel = shared_from_this(); 
 
-  client.connect([&client, req_protocol, done]() {
-    client.writeMessage(req_protocol, [&client, req_protocol, done](AbstractProtocol::s_ptr) {
+  m_client->connect([req_protocol, channel]() mutable {
+    channel->getTcpClient()->writeMessage(req_protocol, [req_protocol, channel](AbstractProtocol::s_ptr) mutable {
       INFOLOG("%s | send rpc request success. call method name[%s]", 
         req_protocol->m_msg_id.c_str(), req_protocol->m_method_name.c_str());
 
-      client.readMessage(req_protocol->m_msg_id, [done](AbstractProtocol::s_ptr msg) {
+      channel->getTcpClient()->readMessage(req_protocol->m_msg_id, [channel](AbstractProtocol::s_ptr msg) mutable {
         std::shared_ptr<rocket::TinyPBProtocol> rsp_protocol = std::dynamic_pointer_cast<rocket::TinyPBProtocol>(msg);
         INFOLOG("%s | success get rpc response, call method name[%s]", 
           rsp_protocol->m_msg_id.c_str(), rsp_protocol->m_method_name.c_str());
-        
-        if (done) {
-          done->Run();
+
+        RpcController* my_controller = dynamic_cast<RpcController*>(channel->getController());
+        if (!(channel->getResponse()->ParseFromString(rsp_protocol->m_pb_data))){
+          ERRORLOG("%s | serialize error", rsp_protocol->m_msg_id.c_str());
+          my_controller->SetError(ERROR_FAILED_SERIALIZE, "serialize error");
+          return;
         }
 
+        if (rsp_protocol->m_err_code != 0) {
+          ERRORLOG("%s | call rpc methood[%s] failed, error code[%d], error info[%s]", 
+            rsp_protocol->m_msg_id.c_str(), rsp_protocol->m_method_name.c_str(),
+            rsp_protocol->m_err_code, rsp_protocol->m_err_info.c_str());
+
+          my_controller->SetError(rsp_protocol->m_err_code, rsp_protocol->m_err_info);
+          return;
+        }
+
+        if (channel->getClosure()) {
+          channel->getClosure()->Run();
+        }
+
+        channel.reset();
       });
     });
 
   });
 
-  
-
 }
 
+
+void RpcChannel::Init(controller_s_ptr controller, message_s_ptr req, message_s_ptr res, closure_s_ptr done) {
+  if (m_is_init) {
+    return;
+  }
+  m_controller = controller;
+  m_request = req; 
+  m_response = res;
+  m_closure = done;
+  m_is_init = true;
+}
+
+google::protobuf::RpcController* RpcChannel::getController() {
+  return m_controller.get();
+}
+
+google::protobuf::Message* RpcChannel::getRequest() {
+  return m_request.get();
+}
+
+google::protobuf::Message* RpcChannel::getResponse() {
+  return m_response.get();
+}
+
+google::protobuf::Closure* RpcChannel::getClosure() {
+  return m_closure.get();
+}
+
+
+TcpClient* RpcChannel::getTcpClient() {
+  return m_client.get();
+}
 
 }

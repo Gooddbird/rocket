@@ -79,6 +79,13 @@ void TcpClient::connect(std::function<void()> done) {
 
 }
 
+
+void TcpClient::stop() {
+  if (m_event_loop->isLooping()) {
+    m_event_loop->stop();
+  }
+}
+
 // 异步的发送 message
 // 如果发送 message 成功，会调用 done 函数， 函数的入参就是 message 对象 
 void TcpClient::writeMessage(AbstractProtocol::s_ptr message, std::function<void(AbstractProtocol::s_ptr)> done) {
