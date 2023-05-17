@@ -6,6 +6,7 @@
 #include "rocket/net/eventloop.h"
 #include "rocket/net/tcp/tcp_connection.h"
 #include "rocket/net/coder/abstract_protocol.h"
+#include "rocket/net/timer_event.h"
 
 
 namespace rocket {
@@ -42,6 +43,8 @@ class TcpClient {
   NetAddr::s_ptr getLocalAddr();
 
   void initLocalAddr();
+
+  void addTimerEvent(TimerEvent::s_ptr timer_event);
 
 
  private:
