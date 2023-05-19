@@ -2,16 +2,10 @@
 <root>
   <log>
     <log_level>DEBUG</log_level>
-    <log_file_name>test_rpc_server</log_file_name>
+    <log_file_name>test_rpc_client</log_file_name>
     <log_file_path>../log/</log_file_path>
     <log_max_file_size>1000000000</log_max_file_size>
     <log_sync_interval>500</log_sync_interval>
   </log>
-
-  <server>
-    <port>12345</port>
-    <io_threads>4</io_threads>
-  </server>
-
 
 </root>
