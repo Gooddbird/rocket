@@ -17,10 +17,10 @@ PATH_RPC = $(PATH_ROCKET)/net/rpc
 
 PATH_TESTCASES = testcases
 
-# will install lib to /usr/lib/libsocket.a
+# will install lib to /usr/lib/librocket.a
 PATH_INSTALL_LIB_ROOT = /usr/lib
 
-# will install all header file to /usr/include/socket
+# will install all header file to /usr/include/rocket
 PATH_INSTALL_INC_ROOT = /usr/include
 
 PATH_INSTALL_INC_COMM = $(PATH_INSTALL_INC_ROOT)/$(PATH_COMM)
@@ -103,7 +103,7 @@ clean :
 
 # install
 install:
-	mkdir -p $(PATH_INSTALL_INC_COMM) $(PATH_INSTALL_INC_NET) \
+	mkdir -p $(PATH_INSTALL_INC_COMM) $(PATH_INSTALL_INC_NET) $(PATH_INSTALL_INC_TCP) $(PATH_INSTALL_INC_CODER) $(PATH_INSTALL_INC_RPC)\
 		&& cp $(PATH_COMM)/*.h $(PATH_INSTALL_INC_COMM) \
 		&& cp $(PATH_NET)/*.h $(PATH_INSTALL_INC_NET) \
 		&& cp $(PATH_TCP)/*.h $(PATH_INSTALL_INC_TCP) \

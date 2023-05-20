@@ -104,14 +104,10 @@ void test_rpc_channel() {
     channel.reset();
   });
 
+  CALLRPRC("127.0.0.1:12346", Order_Stub, makeOrder, controller, request, response, closure);
 
-  // channel->Init(controller, request, response, closure);
-
-  // Order_Stub stub(channel.get());
-
-  // stub.makeOrder(controller.get(), request.get(), response.get(), closure.get());
-
-  CALLRPRC("127.0.0.1:12346", makeOrder, controller, request, response, closure);
+  // xxx
+  // 协程
 }
 
 int main() {

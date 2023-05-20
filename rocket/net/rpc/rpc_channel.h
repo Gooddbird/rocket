@@ -19,11 +19,11 @@ namespace rocket {
 #define NEWRPCCHANNEL(addr, var_name) \
   std::shared_ptr<rocket::RpcChannel> var_name = std::make_shared<rocket::RpcChannel>(std::make_shared<rocket::IPNetAddr>(addr)); \
 
-#define CALLRPRC(addr, method_name, controller, request, response, closure) \
+#define CALLRPRC(addr, stub_name, method_name, controller, request, response, closure) \
   { \
   NEWRPCCHANNEL(addr, channel); \
   channel->Init(controller, request, response, closure); \
-  Order_Stub(channel.get()).method_name(controller.get(), request.get(), response.get(), closure.get()); \
+  stub_name(channel.get()).method_name(controller.get(), request.get(), response.get(), closure.get()); \
   } \
 
 

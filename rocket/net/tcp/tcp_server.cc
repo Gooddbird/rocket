@@ -2,6 +2,7 @@
 #include "rocket/net/eventloop.h"
 #include "rocket/net/tcp/tcp_connection.h"
 #include "rocket/common/log.h"
+#include "rocket/common/config.h"
 
 
 
@@ -27,7 +28,7 @@ void TcpServer::init() {
   m_acceptor = std::make_shared<TcpAcceptor>(m_local_addr);
 
   m_main_event_loop = EventLoop::GetCurrentEventLoop();
-  m_io_thread_group = new IOThreadGroup(2);
+  m_io_thread_group = new IOThreadGroup(Config::GetGlobalConfig()->m_io_threads);
 
   m_listen_fd_event = new FdEvent(m_acceptor->getListenFd());
   m_listen_fd_event->listen(FdEvent::IN_EVENT, std::bind(&TcpServer::onAccept, this));
