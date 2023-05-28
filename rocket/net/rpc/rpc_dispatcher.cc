@@ -7,11 +7,18 @@
 #include "rocket/common/log.h"
 #include "rocket/common/error_code.h"
 #include "rocket/net/rpc/rpc_controller.h"
+#include "rocket/net/rpc/rpc_closure.h"
 #include "rocket/net/tcp/net_addr.h"
 #include "rocket/net/tcp/tcp_connection.h"
 #include "rocket/common/run_time.h"
 
 namespace rocket {
+
+#define DELETE_RESOURCE(XX) \
+  if (XX != NULL) { \
+    delete XX;      \
+    XX = NULL;      \
+  }                 \
 
 static RpcDispatcher* g_rpc_dispatcher = NULL;
 
@@ -63,10 +70,7 @@ void RpcDispatcher::dispatch(AbstractProtocol::s_ptr request, AbstractProtocol::
   if (!req_msg->ParseFromString(req_protocol->m_pb_data)) {
     ERRORLOG("%s | deserilize error", req_protocol->m_msg_id.c_str(), method_name.c_str(), service_name.c_str());
     setTinyPBError(rsp_protocol, ERROR_FAILED_DESERIALIZE, "deserilize error");
-    if (req_msg != NULL) {
-      delete req_msg;
-      req_msg = NULL;
-    }
+    DELETE_RESOURCE(req_msg);
     return;
   }
 
@@ -74,37 +78,40 @@ void RpcDispatcher::dispatch(AbstractProtocol::s_ptr request, AbstractProtocol::
 
   google::protobuf::Message* rsp_msg = service->GetResponsePrototype(method).New();
 
-  RpcController rpcController;
-  rpcController.SetLocalAddr(connection->getLocalAddr());
-  rpcController.SetPeerAddr(connection->getPeerAddr());
-  rpcController.SetMsgId(req_protocol->m_msg_id);
+  RpcController* rpc_controller = new RpcController();
+  rpc_controller->SetLocalAddr(connection->getLocalAddr());
+  rpc_controller->SetPeerAddr(connection->getPeerAddr());
+  rpc_controller->SetMsgId(req_protocol->m_msg_id);
 
   RunTime::GetRunTime()->m_msgid = req_protocol->m_msg_id;
   RunTime::GetRunTime()->m_method_name = method_name;
-  service->CallMethod(method, &rpcController, req_msg, rsp_msg, NULL);
 
-  if (!rsp_msg->SerializeToString(&(rsp_protocol->m_pb_data))) {
-    ERRORLOG("%s | serilize error, origin message [%s]", req_protocol->m_msg_id.c_str(), rsp_msg->ShortDebugString().c_str());
-    setTinyPBError(rsp_protocol, ERROR_SERVICE_NOT_FOUND, "serilize error");
-    return;
+  RpcClosure* closure = new RpcClosure([req_msg, rsp_msg, req_protocol, rsp_protocol, connection, rpc_controller, this]() mutable {
+    if (!rsp_msg->SerializeToString(&(rsp_protocol->m_pb_data))) {
+      ERRORLOG("%s | serilize error, origin message [%s]", req_protocol->m_msg_id.c_str(), rsp_msg->ShortDebugString().c_str());
+      setTinyPBError(rsp_protocol, ERROR_FAILED_SERIALIZE, "serilize error");
 
-    if (req_msg != NULL) {
-      delete req_msg;
-      req_msg = NULL;
+      DELETE_RESOURCE(req_msg);
+      DELETE_RESOURCE(rsp_msg);
+      DELETE_RESOURCE(rpc_controller);
+    } else {
+      rsp_protocol->m_err_code = 0;
+      rsp_protocol->m_err_info = "";
+      INFOLOG("%s | dispatch success, requesut[%s], response[%s]", req_protocol->m_msg_id.c_str(), req_msg->ShortDebugString().c_str(), rsp_msg->ShortDebugString().c_str());
     }
-    if (rsp_msg != NULL) {
-      delete rsp_msg;
-      rsp_msg = NULL;
-    }
-  }
 
-  rsp_protocol->m_err_code = 0;
-  INFOLOG("%s | dispatch success, requesut[%s], response[%s]", req_protocol->m_msg_id.c_str(), req_msg->ShortDebugString().c_str(), rsp_msg->ShortDebugString().c_str());
+    std::vector<AbstractProtocol::s_ptr> replay_messages;
+    replay_messages.emplace_back(rsp_protocol);
+    connection->reply(replay_messages);
 
-  delete req_msg;
-  delete rsp_msg;
-  req_msg = NULL;
-  rsp_msg = NULL;
+    DELETE_RESOURCE(req_msg);
+    DELETE_RESOURCE(rsp_msg);
+    DELETE_RESOURCE(rpc_controller);
+
+  });
+
+  service->CallMethod(method, rpc_controller, req_msg, rsp_msg, closure);
+  
 }
 
 

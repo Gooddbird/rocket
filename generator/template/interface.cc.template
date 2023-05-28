@@ -11,16 +11,19 @@
 ****************************************************/
 
 
-#include "rocket/common/log.h"
+#include <rocket/common/log.h>
 ${INCLUDE_INTERFACE_HEADER_FILE}
+${INCLUDE_INTERFACEBASE_HEADER_FILE}
 ${INCLUDE_PB_HEADER}
 
 namespace ${PROJECT_NAME} {
 
-${CLASS_NAME}::${CLASS_NAME}(const ${REQUEST_TYPE}& request, ${RESPONSE_TYPE}& response)
-  : m_request(request), 
-  m_response(response) {
-
+${CLASS_NAME}::${CLASS_NAME}(const ${REQUEST_TYPE}& request, ${RESPONSE_TYPE}& response, 
+  rocket::RpcClosure& done, const rocket::RpcController& controller)
+  : Interface(done, controller), 
+    m_request(request), 
+    m_response(response) {
+  APPINFOLOG("In|request:{%s}", request.ShortDebugString().c_str());                                                             \
 }
 
 ${CLASS_NAME}::~${CLASS_NAME}() {
@@ -28,12 +31,25 @@ ${CLASS_NAME}::~${CLASS_NAME}() {
 }
 
 void ${CLASS_NAME}::run() {
+
   //
   // Run your business at here
-  // m_reponse.set_ret_code(0);
-  // m_reponse.set_res_info("Succ");
-  //
+  // m_response.set_xxx(xxx);
+  // you should call reply() method at the end of business logic to set response back to client
 
+  reply();
+
+}
+
+void ${CLASS_NAME}::setError(long long code, const std::string& err_info) {
+  m_response.set_ret_code(code);
+  m_response.set_res_info(err_info);
+  
+}
+
+void ${CLASS_NAME}::reply() {
+  APPINFOLOG("Out|response:{%s}", m_response.ShortDebugString().c_str());                                                          \
+  Interface::reply();
 }
 
 

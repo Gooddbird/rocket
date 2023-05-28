@@ -66,6 +66,8 @@ class TcpConnection {
 
   NetAddr::s_ptr getPeerAddr();
 
+  void reply(std::vector<AbstractProtocol::s_ptr>& replay_messages);
+
  private:
 
   EventLoop* m_event_loop {NULL};   // 代表持有该连接的 IO 线程

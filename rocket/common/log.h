@@ -104,6 +104,9 @@ class AsyncLogger {
  public:
   static void* Loop(void*);
 
+ public:
+  pthread_t m_thread;
+
  private:
   // m_file_path/m_file_name_yyyymmdd.0
 
@@ -114,7 +117,6 @@ class AsyncLogger {
   int m_max_file_size {0};    // 日志单个文件最大大小, 单位为字节
 
   sem_t m_sempahore;
-  pthread_t m_thread;
 
   pthread_cond_t m_condtion;  // 条件变量
   Mutex m_mutex;
@@ -148,7 +150,17 @@ class Logger {
     return m_set_level;
   }
 
+  AsyncLogger::s_ptr getAsyncAppLopger() {
+    return m_asnyc_app_logger;
+  }
+
+  AsyncLogger::s_ptr getAsyncLopger() {
+    return m_asnyc_logger;
+  }
+
   void syncLoop();
+
+  void flush();
 
  public:
   static Logger* GetGlobalLogger();

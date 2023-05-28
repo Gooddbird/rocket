@@ -14,42 +14,37 @@
 #define ${HEADER_DEFINE} 
 
 #include <rocket/net/rpc/rpc_closure.h>
-${INCLUDE_PB_HEADER}
-${INCLUDE_INTERFACEBASE_HEADER_FILE}
-
+#include <rocket/net/rpc/rpc_controller.h>
 
 namespace ${PROJECT_NAME} {
 
 /*
- * Rpc Interface Class
- * Alloc one object every time RPC call begin, and destroy this object while RPC call end
+ * Rpc Interface Base Class
+ * All interface should extend this abstract class
 */
 
-class ${CLASS_NAME} : public Interface {
+class Interface {
  public:
 
-  ${CLASS_NAME}(const ${REQUEST_TYPE}& request, ${RESPONSE_TYPE}& response, 
-    rocket::RpcClosure& done, const rocket::RpcController& controller);
+  Interface(rocket::RpcClosure& done, const rocket::RpcController& controller);
 
-  ~${CLASS_NAME}();
+  ~Interface();
 
- public:
   // core business deal method
-  virtual void run() override;
+  virtual void run() = 0;
 
   // set error code and error into to response message
-  virtual void setError(long long code, const std::string& err_info) override;
+  virtual void setError(long long code, const std::string& err_info) = 0;
 
   // reply to client
   // you should call is when you wan to set response back
   // it means this rpc method done 
-  virtual void reply() override;
+  virtual void reply();
 
+ protected:
+  rocket::RpcClosure& m_done;       // callback
 
- private:
-  const ${REQUEST_TYPE}& m_request;       // request object fron client
-
-  ${RESPONSE_TYPE}& m_response;           // response object that reply to client
+  const rocket::RpcController& m_controller;
 
 };
 

@@ -2,6 +2,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <assert.h>
+#include <signal.h>
 #include "rocket/common/log.h"
 #include "rocket/common/util.h"
 #include "rocket/common/config.h"
@@ -14,6 +15,16 @@
 namespace rocket {
 
 static Logger* g_logger = NULL;
+
+void CoredumpHandler(int signal_no) {
+  ERRORLOG("progress received invalid signal, will exit");
+  g_logger->flush();
+  pthread_join(g_logger->getAsyncLopger()->m_thread, NULL);
+  pthread_join(g_logger->getAsyncAppLopger()->m_thread, NULL);
+
+  signal(signal_no, SIG_DFL);
+  raise(signal_no);
+}
 
 Logger* Logger::GetGlobalLogger() {
   return g_logger;
@@ -36,6 +47,15 @@ Logger::Logger(LogLevel level, int type /*=1*/) : m_set_level(level), m_type(typ
       Config::GetGlobalConfig()->m_log_max_file_size);
 }
 
+void Logger::flush() {
+  syncLoop();
+  m_asnyc_logger->stop();
+  m_asnyc_logger->flush();
+
+  m_asnyc_app_logger->stop();
+  m_asnyc_app_logger->flush();
+}
+
 
 void Logger::init() {
   if (m_type == 0) {
@@ -43,6 +63,13 @@ void Logger::init() {
   }
   m_timer_event = std::make_shared<TimerEvent>(Config::GetGlobalConfig()->m_log_sync_inteval, true, std::bind(&Logger::syncLoop, this));
   EventLoop::GetCurrentEventLoop()->addTimerEvent(m_timer_event);
+  signal(SIGSEGV, CoredumpHandler);
+  signal(SIGABRT, CoredumpHandler);
+  signal(SIGTERM, CoredumpHandler);
+  signal(SIGKILL, CoredumpHandler);
+  signal(SIGINT, CoredumpHandler);
+  signal(SIGSTKFLT, CoredumpHandler);
+
 }
 
 

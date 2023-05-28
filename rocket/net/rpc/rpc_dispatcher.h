@@ -30,7 +30,7 @@ class RpcDispatcher {
 
  private:
   bool parseServiceFullName(const std::string& full_name, std::string& service_name, std::string& method_name);
-  
+
  private:
   std::map<std::string, service_s_ptr> m_service_map;
 };

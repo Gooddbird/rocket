@@ -270,7 +270,8 @@ def generate_framework_code():
             PROJECT_NAME = project_name,
             FILE_NAME = 'business_exception.cc',
             HEADER_DEFINE = project_name.upper() + '_COMM_BUSINESSEXCEPTION_H',
-            CREATE_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            CREATE_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            INCLUDE_INTERFACEBASE_HEADER_FILE = '#include "' + project_name + '/interface/interface.h"',
         )
         out_exception_file = open(exception_file, 'w')
         out_exception_file.write(exception_content)
@@ -403,8 +404,50 @@ def generate_framework_code():
     print('End generate main.cc')
     print('=' * 100)
 
+    
+    # genneator interface.h file
+    interfase_base_h_file = src_path + '/interface/interface.h'
+    if not os.path.exists(interfase_base_h_file):
+        interface_base_h_file_temlate = Template(open(generator_path + '/template/interface_base.h.template','r').read())
+        interfase_base_h_file_content = interface_base_h_file_temlate.safe_substitute(
+            FILE_NAME = 'interface.h',
+            PROJECT_NAME = project_name,
+            HEADER_DEFINE = project_name.upper() + '_INTERFACE_H',
+            CREATE_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
+        interface_base_h_handler = open(interfase_base_h_file, 'w')
+        interface_base_h_handler.write(interfase_base_h_file_content)
+        interface_base_h_handler.close()
+    else:
+        print("file: [" + interfase_base_h_file + "] exist, skip")
+
+    print('End generate interface.h')
     print('=' * 100)
-    print('Begin generate each interface.cc & interface.h')
+
+    # genneator interface.cc file
+    interfase_base_cc_file = src_path + '/interface/interface.cc'
+    if not os.path.exists(interfase_base_cc_file):
+        interface_base_cc_file_temlate = Template(open(generator_path + '/template/interface_base.cc.template','r').read())
+        interfase_base_cc_file_content = interface_base_cc_file_temlate.safe_substitute(
+            FILE_NAME = 'interface.cc',
+            PROJECT_NAME = project_name,
+            CREATE_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            INCLUDE_INTERFACEBASE_HEADER_FILE = '#include "' + project_name + '/interface/interface.h"',
+        )
+        interface_base_cc_handler = open(interfase_base_cc_file, 'w')
+        interface_base_cc_handler.write(interfase_base_cc_file_content)
+        interface_base_cc_handler.close()
+    else:
+        print("file: [" + interfase_base_cc_file + "] exist, skip")
+
+    print('End generate interface.cc')
+    print('=' * 100)
+
+    
+
+
+    print('=' * 100)
+    print('Begin generate each rpc method interface.cc & interface.h')
     # genneator each interface.cc and .h file
     interface_head_file_temlate = Template(open(generator_path + '/template/interface.h.template','r').read())
     interface_cc_file_temlate = Template(open(generator_path + '/template/interface.cc.template','r').read())
@@ -424,6 +467,7 @@ def generate_framework_code():
                 CLASS_NAME = each['interface_class_name'],
                 REQUEST_TYPE = each['request_type'],
                 RESPONSE_TYPE = each['response_type'],
+                INCLUDE_INTERFACEBASE_HEADER_FILE = '#include "' + project_name + '/interface/interface.h"',
                 FILE_NAME = each['interface_name'] + '.h'
             )
             out_interface_header_file = open(file, 'w')
@@ -439,6 +483,7 @@ def generate_framework_code():
                 PROJECT_NAME = project_name,
                 INCLUDE_PB_HEADER = '#include "' + project_name + '/pb/' + project_name + '.pb.h"', 
                 INCLUDE_INTERFACE_HEADER_FILE = '#include "' + project_name + '/interface/' + each['interface_name'] + '.h"',
+                INCLUDE_INTERFACEBASE_HEADER_FILE = '#include "' + project_name + '/interface/interface.h"',
                 CREATE_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 CLASS_NAME = each['interface_class_name'],
                 REQUEST_TYPE = each['request_type'],

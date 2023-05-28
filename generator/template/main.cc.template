@@ -15,11 +15,11 @@
 
 #include <google/protobuf/service.h>
 #include <memory>
-#include "rocket/common/log.h"
-#include "rocket/common/config.h"
-#include "rocket/net/tcp/net_addr.h"
-#include "rocket/net/tcp/tcp_server.h"
-#include "rocket/net/rpc/rpc_dispatcher.h"
+#include <rocket/common/log.h>
+#include <rocket/common/config.h>
+#include <rocket/net/tcp/net_addr.h>
+#include <rocket/net/tcp/tcp_server.h>
+#include <rocket/net/rpc/rpc_dispatcher.h>
 ${INCLUDE_SERVER_HEADER}
 
 int main(int argc, char* argv[]) {

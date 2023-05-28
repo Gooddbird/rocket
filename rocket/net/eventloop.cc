@@ -5,6 +5,7 @@
 #include "rocket/net/eventloop.h"
 #include "rocket/common/log.h"
 #include "rocket/common/util.h"
+#include "rocket/common/exception.h"
 
 
 #define ADD_TO_EPOLL() \
@@ -119,8 +120,15 @@ void EventLoop::loop() {
     while (!tmp_tasks.empty()) {
       std::function<void()> cb = tmp_tasks.front();
       tmp_tasks.pop();
-      if (cb) {
-        cb();
+      try {
+        if (cb) {
+          cb();
+        }
+      } catch (RocketException& e) {
+        ERRORLOG("RocketException exception[%s], deal handle", e.what());
+        e.handle();
+      } catch (std::exception& e) {
+        ERRORLOG("std::exception[%s]", e.what());
       }
     }
 
