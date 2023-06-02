@@ -14,6 +14,7 @@
 #include <rocket/net/rpc/rpc_controller.h>
 #include <rocket/net/rpc/rpc_closure.h>
 #include <rocket/common/log.h>
+#include <stdio.h>
 ${INCLUDE_PB_HEADER}
 
 
@@ -46,6 +47,10 @@ void test_client(const std::string& addr) {
 } 
 
 int main(int argc, char* argv[]) {
+
+  if (argc != 3) {
+    printf ("param error, ./client ip port\n");
+  }
 
   rocket::Config::SetGlobalConfig(NULL);
 

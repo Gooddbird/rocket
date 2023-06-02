@@ -5,7 +5,6 @@
 #include "rocket/net/eventloop.h"
 #include "rocket/common/log.h"
 #include "rocket/common/util.h"
-#include "rocket/common/exception.h"
 
 
 #define ADD_TO_EPOLL() \
@@ -120,15 +119,8 @@ void EventLoop::loop() {
     while (!tmp_tasks.empty()) {
       std::function<void()> cb = tmp_tasks.front();
       tmp_tasks.pop();
-      try {
-        if (cb) {
-          cb();
-        }
-      } catch (RocketException& e) {
-        ERRORLOG("RocketException exception[%s], deal handle", e.what());
-        e.handle();
-      } catch (std::exception& e) {
-        ERRORLOG("std::exception[%s]", e.what());
+      if (cb) {
+        cb();
       }
     }
 
@@ -140,7 +132,7 @@ void EventLoop::loop() {
     epoll_event result_events[g_epoll_max_events];
     // DEBUGLOG("now begin to epoll_wait");
     int rt = epoll_wait(m_epoll_fd, result_events, g_epoll_max_events, timeout);
-    DEBUGLOG("now end epoll_wait, rt = %d", rt);
+    // DEBUGLOG("now end epoll_wait, rt = %d", rt);
 
     if (rt < 0) {
       ERRORLOG("epoll_wait error, errno=%d, error=%s", errno, strerror(errno));
@@ -158,11 +150,11 @@ void EventLoop::loop() {
 
         if (trigger_event.events & EPOLLIN) { 
 
-          DEBUGLOG("fd %d trigger EPOLLIN event", fd_event->getFd())
+          // DEBUGLOG("fd %d trigger EPOLLIN event", fd_event->getFd())
           addTask(fd_event->handler(FdEvent::IN_EVENT));
         }
         if (trigger_event.events & EPOLLOUT) { 
-          DEBUGLOG("fd %d trigger EPOLLOUT event", fd_event->getFd())
+          // DEBUGLOG("fd %d trigger EPOLLOUT event", fd_event->getFd())
           addTask(fd_event->handler(FdEvent::OUT_EVENT));
         }
 

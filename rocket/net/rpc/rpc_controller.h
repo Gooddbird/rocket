@@ -6,14 +6,15 @@
 #include <string>
 
 #include "rocket/net/tcp/net_addr.h"
+#include "rocket/common/log.h"
 
 namespace rocket {
 
 class RpcController : public google::protobuf::RpcController {
 
  public:
-  RpcController() {} 
-  ~RpcController() {} 
+  RpcController() { INFOLOG("RpcController"); } 
+  ~RpcController() { INFOLOG("~RpcController"); } 
 
   void Reset();
 

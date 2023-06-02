@@ -86,14 +86,10 @@ void RpcDispatcher::dispatch(AbstractProtocol::s_ptr request, AbstractProtocol::
   RunTime::GetRunTime()->m_msgid = req_protocol->m_msg_id;
   RunTime::GetRunTime()->m_method_name = method_name;
 
-  RpcClosure* closure = new RpcClosure([req_msg, rsp_msg, req_protocol, rsp_protocol, connection, rpc_controller, this]() mutable {
+  RpcClosure* closure = new RpcClosure(nullptr, [req_msg, rsp_msg, req_protocol, rsp_protocol, connection, rpc_controller, this]() mutable {
     if (!rsp_msg->SerializeToString(&(rsp_protocol->m_pb_data))) {
       ERRORLOG("%s | serilize error, origin message [%s]", req_protocol->m_msg_id.c_str(), rsp_msg->ShortDebugString().c_str());
       setTinyPBError(rsp_protocol, ERROR_FAILED_SERIALIZE, "serilize error");
-
-      DELETE_RESOURCE(req_msg);
-      DELETE_RESOURCE(rsp_msg);
-      DELETE_RESOURCE(rpc_controller);
     } else {
       rsp_protocol->m_err_code = 0;
       rsp_protocol->m_err_info = "";
@@ -103,10 +99,6 @@ void RpcDispatcher::dispatch(AbstractProtocol::s_ptr request, AbstractProtocol::
     std::vector<AbstractProtocol::s_ptr> replay_messages;
     replay_messages.emplace_back(rsp_protocol);
     connection->reply(replay_messages);
-
-    DELETE_RESOURCE(req_msg);
-    DELETE_RESOURCE(rsp_msg);
-    DELETE_RESOURCE(rpc_controller);
 
   });
 

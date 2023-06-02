@@ -106,7 +106,7 @@ void Timer::resetArriveTime() {
   if (rt != 0) {
     ERRORLOG("timerfd_settime error, errno=%d, error=%s", errno, strerror(errno));
   }
-  DEBUGLOG("timer reset to %lld", now + inteval);
+  // DEBUGLOG("timer reset to %lld", now + inteval);
 
 }
 

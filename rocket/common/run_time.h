@@ -3,9 +3,10 @@
 
 
 #include <string>
-#include "rocket/net/rpc/rpc_interface.h"
 
 namespace rocket {
+
+class RpcInterface;
 
 class RunTime {
  public:
