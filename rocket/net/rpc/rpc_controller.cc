@@ -9,6 +9,7 @@ void RpcController::Reset() {
   m_msg_id = "";
   m_is_failed = false;
   m_is_cancled = false;
+  m_is_finished = false;
   m_local_addr = nullptr;
   m_peer_addr = nullptr;
   m_timeout = 1000;   // ms
@@ -24,10 +25,13 @@ std::string RpcController::ErrorText() const {
 
 void RpcController::StartCancel() {
   m_is_cancled = true;
+  m_is_failed = true;
+  SetFinished(true);
 }
 
 void RpcController::SetFailed(const std::string& reason) {
   m_error_info = reason;
+  m_is_failed = true;
 }
 
 bool RpcController::IsCanceled() const {
@@ -43,6 +47,7 @@ void RpcController::SetError(int32_t error_code, const std::string error_info) {
   m_error_code = error_code;
   m_error_info = error_info;
   m_is_failed = true;
+  SetFinished(true);
 }
 
 int32_t RpcController::GetErrorCode() {
@@ -83,6 +88,14 @@ void RpcController::SetTimeout(int timeout) {
 
 int RpcController::GetTimeout() {
   return m_timeout;
+}
+
+bool RpcController::Finished() {
+  return m_is_finished;
+}
+
+void RpcController::SetFinished(bool value) {
+  m_is_finished = value;
 }
 
 }

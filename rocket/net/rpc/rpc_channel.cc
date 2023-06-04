@@ -74,6 +74,11 @@ void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
   s_ptr channel = shared_from_this(); 
 
   m_timer_event = std::make_shared<TimerEvent>(my_controller->GetTimeout(), false, [my_controller, channel]() mutable {
+    if (my_controller->Finished()) {
+      channel.reset();
+      return;
+    }
+
     my_controller->StartCancel();
     my_controller->SetError(ERROR_RPC_CALL_TIMEOUT, "rpc call timeout " + std::to_string(my_controller->GetTimeout()));
 
@@ -121,11 +126,13 @@ void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
           channel->getTcpClient()->getPeerAddr()->toString().c_str(), channel->getTcpClient()->getLocalAddr()->toString().c_str());
 
         // 当成功读取到回包后， 取消定时任务
-        channel->getTimerEvent()->setCancled(true);
+        // channel->getTimerEvent()->setCancled(true);
+        my_controller->SetFinished(true);
 
         if (!(channel->getResponse()->ParseFromString(rsp_protocol->m_pb_data))){
           ERRORLOG("%s | serialize error", rsp_protocol->m_msg_id.c_str());
           my_controller->SetError(ERROR_FAILED_SERIALIZE, "serialize error");
+          channel.reset();
           return;
         }
 
@@ -135,21 +142,26 @@ void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
             rsp_protocol->m_err_code, rsp_protocol->m_err_info.c_str());
 
           my_controller->SetError(rsp_protocol->m_err_code, rsp_protocol->m_err_info);
+          channel.reset();
           return;
         }
 
         INFOLOG("%s | call rpc success, call method name[%s], peer addr[%s], local addr[%s]",
           rsp_protocol->m_msg_id.c_str(), rsp_protocol->m_method_name.c_str(),
           channel->getTcpClient()->getPeerAddr()->toString().c_str(), channel->getTcpClient()->getLocalAddr()->toString().c_str())
-        
+
         if (!my_controller->IsCanceled() && channel->getClosure()) {
           channel->getClosure()->Run();
         }
 
         channel.reset();
+      
       });
+
+      channel.reset();
     });
 
+    channel.reset();
   });
 
 }

@@ -111,6 +111,7 @@ void TcpConnection::excute() {
       auto it = m_read_dones.find(msg_id);
       if (it != m_read_dones.end()) {
         it->second(result[i]);
+        m_read_dones.erase(it);
       }
     }
 

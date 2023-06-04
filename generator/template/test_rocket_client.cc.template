@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
 
   if (argc != 3) {
     printf ("param error, ./client ip port\n");
+    return -1;
   }
 
   rocket::Config::SetGlobalConfig(NULL);
