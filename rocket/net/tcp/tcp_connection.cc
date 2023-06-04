@@ -255,4 +255,9 @@ NetAddr::s_ptr TcpConnection::getPeerAddr() {
   return m_peer_addr;
 }
 
+
+int TcpConnection::getFd() {
+  return m_fd;
+}
+
 }

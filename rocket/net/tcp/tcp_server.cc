@@ -20,6 +20,14 @@ TcpServer::~TcpServer() {
     delete m_main_event_loop;
     m_main_event_loop = NULL;
   }
+  if (m_io_thread_group) {
+    delete m_io_thread_group;
+    m_io_thread_group = NULL; 
+  }
+  if (m_listen_fd_event) {
+    delete m_listen_fd_event;
+    m_listen_fd_event = NULL;
+  }
 }
 
 
@@ -34,6 +42,9 @@ void TcpServer::init() {
   m_listen_fd_event->listen(FdEvent::IN_EVENT, std::bind(&TcpServer::onAccept, this));
   
   m_main_event_loop->addEpollEvent(m_listen_fd_event);
+
+  m_clear_client_timer_event = std::make_shared<TimerEvent>(5000, true, std::bind(&TcpServer::ClearClientTimerFunc, this));
+	m_main_event_loop->addTimerEvent(m_clear_client_timer_event);
 
 }
 
@@ -58,6 +69,24 @@ void TcpServer::onAccept() {
 void TcpServer::start() {
   m_io_thread_group->start();
   m_main_event_loop->loop();
+}
+
+
+void TcpServer::ClearClientTimerFunc() {
+  auto it = m_client.begin();
+  for (it = m_client.begin(); it != m_client.end(); ) {
+    // TcpConnection::ptr s_conn = i.second;
+		// DebugLog << "state = " << s_conn->getState();
+    if ((*it) != nullptr && (*it).use_count() > 0 && (*it)->getState() == Closed) {
+      // need to delete TcpConnection
+      DEBUGLOG("TcpConection [fd:%d] will delete, state=%d", (*it)->getFd(), (*it)->getState());
+      it = m_client.erase(it);
+    } else {
+      it++;
+    }
+	
+  }
+
 }
 
 }

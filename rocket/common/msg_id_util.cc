@@ -36,7 +36,7 @@ std::string MsgIDUtil::GenMsgID() {
     }
     if (i >= 0) {
       t_msg_id_no[i] += 1;
-      for (size_t j = i + 1; i < t_msg_id_no.length(); ++j) {
+      for (size_t j = i + 1; j < t_msg_id_no.length(); ++j) {
         t_msg_id_no[j] = '0';
       }
     }

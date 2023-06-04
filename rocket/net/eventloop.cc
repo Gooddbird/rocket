@@ -145,8 +145,8 @@ void EventLoop::loop() {
           continue;
         }
 
-        int event = (int)(trigger_event.events); 
-        DEBUGLOG("unkonow event = %d", event);
+        // int event = (int)(trigger_event.events); 
+        // DEBUGLOG("unkonow event = %d", event);
 
         if (trigger_event.events & EPOLLIN) { 
 

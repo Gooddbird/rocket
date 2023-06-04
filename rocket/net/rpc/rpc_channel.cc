@@ -8,6 +8,7 @@
 #include "rocket/common/log.h"
 #include "rocket/common/msg_id_util.h"
 #include "rocket/common/error_code.h"
+#include "rocket/common/run_time.h"
 #include "rocket/net/timer_event.h"
 
 namespace rocket {
@@ -35,9 +36,19 @@ void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
   }
 
   if (my_controller->GetMsgId().empty()) {
-    req_protocol->m_msg_id = MsgIDUtil::GenMsgID();
-    my_controller->SetMsgId(req_protocol->m_msg_id);
+    // 先从 runtime 里面取, 取不到再生成一个
+    // 这样的目的是为了实现 msg_id 的透传，假设服务 A 调用了 B，那么同一个 msgid 可以在服务 A 和 B 之间串起来，方便日志追踪
+    std::string msg_id = RunTime::GetRunTime()->m_msgid;
+    if (!msg_id.empty()) {
+      req_protocol->m_msg_id = msg_id;
+      my_controller->SetMsgId(msg_id);
+    } else {
+      req_protocol->m_msg_id = MsgIDUtil::GenMsgID();
+      my_controller->SetMsgId(req_protocol->m_msg_id);
+    }
+
   } else {
+    // 如果 controller 指定了 msgno, 直接使用
     req_protocol->m_msg_id = my_controller->GetMsgId();
   }
 

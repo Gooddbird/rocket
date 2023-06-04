@@ -28,7 +28,7 @@ void test_client(const std::string& addr) {
   NEWRPCCONTROLLER(controller);
   controller->SetTimeout(2000);
 
-  std::shared_ptr<rocket::RpcClosure> closure = std::make_shared<rocket::RpcClosure>([request, response, controller]() mutable {
+  std::shared_ptr<rocket::RpcClosure> closure = std::make_shared<rocket::RpcClosure>(nullptr, [request, response, controller]() mutable {
     if (controller->GetErrorCode() == 0) {
       INFOLOG("call rpc success, request[%s], response[%s]", request->ShortDebugString().c_str(), response->ShortDebugString().c_str());
       
