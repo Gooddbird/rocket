@@ -47,7 +47,6 @@ void RpcController::SetError(int32_t error_code, const std::string error_info) {
   m_error_code = error_code;
   m_error_info = error_info;
   m_is_failed = true;
-  SetFinished(true);
 }
 
 int32_t RpcController::GetErrorCode() {

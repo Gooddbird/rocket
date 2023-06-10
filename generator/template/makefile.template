@@ -16,6 +16,7 @@ PATH_SERVICE = service
 PATH_INTERFACE = interface
 PATH_PB = pb
 PATH_COMM = comm
+PATH_STUBS = stubs
 PATH_OBJ = ../obj
 PATH_TEST_CLIENT = ../test_client
 PATH_TEST_CLIENT_TOOL = $(PATH_TEST_CLIENT)/test_tool
@@ -41,13 +42,14 @@ CXX := g++
 
 CXX_FLAGS := -g -O3 -std=c++11 -Wall -Wno-deprecated -Wno-unused-but-set-variable
 
-CXX_FLAGS += -I../ -I ./$(PATH_PB) -I ./$(PATH_SERVICE) -I ./$(PATH_INTERFACE) -I ./$(PATH_COMM) -I$(ROCKET_PATH)
+CXX_FLAGS += -I../ -I ./$(PATH_PB) -I ./$(PATH_SERVICE) -I ./$(PATH_INTERFACE) -I ./$(PATH_COMM) -I$(PATH_STUBS) -I$(ROCKET_PATH)
 
 LIBS += $(ROCKET_LIB)
 
 LIBS += $(PROTOBUF_LIB) $(TINYXML_LIB)
 
 PB_OBJS := $(patsubst $(PATH_PB)/%.cc, $(PATH_OBJ)/%.o, $(wildcard $(PATH_PB)/*.cc))
+STUB_OBJS := $(patsubst $(PATH_STUBS)/%.cc, $(PATH_OBJ)/%.o, $(wildcard $(PATH_STUBS)/*.cc))
 SERVICE_OBJS := $(patsubst $(PATH_SERVICE)/%.cc, $(PATH_OBJ)/%.o, $(wildcard $(PATH_SERVICE)/*.cc))
 INTERFACE_OBJS := $(patsubst $(PATH_INTERFACE)/%.cc, $(PATH_OBJ)/%.o, $(wildcard $(PATH_INTERFACE)/*.cc))
 COMM_OBJS := $(patsubst $(PATH_COMM)/%.cc, $(PATH_OBJ)/%.o, $(wildcard $(PATH_COMM)/*.cc))
@@ -55,7 +57,7 @@ TEST_BINS := $(patsubst $(PATH_TEST_CLIENT)/%.cc, $(PATH_TEST_CLIENT_TOOL)/%, $(
 
 OUT : $(TARGET) $(TEST_BINS)
 
-$(TARGET) : $(PB_OBJS) $(SERVICE_OBJS) $(INTERFACE_OBJS)
+$(TARGET) : $(PB_OBJS) $(STUB_OBJS) $(SERVICE_OBJS) $(INTERFACE_OBJS)
 	$(CXX) $(CXX_FLAGS) main.cc -o $@ $^ $(LIBS) -ldl -lpthread
 
 $(PATH_TEST_CLIENT_TOOL)/%: $(PATH_TEST_CLIENT)/%.cc $(PB_OBJS)
@@ -73,9 +75,12 @@ $(PATH_OBJ)/%.o : $(PATH_INTERFACE)/%.cc
 $(PATH_OBJ)/%.o : $(PATH_COMM)/%.cc
 	$(CXX) $(CXX_FLAGS) -c $< -o $@
 
+$(PATH_OBJ)/%.o : $(PATH_STUBS)/%.cc
+	$(CXX) $(CXX_FLAGS) -c $< -o $@
+
 
 
 PRINT-% : ; @echo $* = $($*)
 
 clean :
-	rm -f $(PB_OBJS) $(SERVICE_OBJS) $(INTERFACE_OBJS) $(COMM_OBJS) $(TARGET) $(TEST_BINS)
+	rm -f $(PB_OBJS) $(STUB_OBJS) $(SERVICE_OBJS) $(INTERFACE_OBJS) $(COMM_OBJS) $(TARGET) $(TEST_BINS)

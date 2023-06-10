@@ -49,7 +49,8 @@ void test_client(const std::string& addr) {
 int main(int argc, char* argv[]) {
 
   if (argc != 3) {
-    printf ("param error, ./client ip port\n");
+    printf ("param error, Usage: ./client ip port\n");
+    printf ("For example: ./client 127.0.0.1 12345\n");
     return -1;
   }
 

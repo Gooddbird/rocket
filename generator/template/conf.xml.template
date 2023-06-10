@@ -5,17 +5,41 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <root>
   <log>
+    <!-- 日志级别，从低到高为 DEBUG,INFO,ERROR -->
     <log_level>DEBUG</log_level>
+
+    <!-- 日志文件前缀名字 -->
     <log_file_name>${PROJECT_NAME}</log_file_name>
+
+    <!-- 日志文件输出相对路径 -->
     <log_file_path>../log/</log_file_path>
+
+    <!-- 单个日志文件最大大小，单位为字节 -->
     <log_max_file_size>1000000000</log_max_file_size>
+
+    <!-- 异步日志同步频率，单位 ms, 建议为 1000ms以下，值越大丢日志的风险越高 -->
     <log_sync_interval>500</log_sync_interval>
   </log>
 
   <server>
+    <!-- RPC 服务启动时候监听的端口 -->
     <port>12345</port>
+
+    <!-- io 线程数，根据机器配置自信调整，推荐为 cpu 核数的整数倍-->
     <io_threads>4</io_threads>
   </server>
+
+  <!-- 存放调用方地址，例如需要调用服务 demo，可以将其地址配置在这里，在 RPC 调用时会从配置里面取出地址作为对端服务的地址进行通信 -->
+  <stubs>
+    <rpc_server>
+      <!-- 对端 rpc 服务唯一名字 -->
+      <name>demo</name>
+
+      <ip>127.0.0.1</ip>
+      <port>54321</port>
+      <timeout>2000</timeout>
+    </rpc_server> 
+  </stubs>
 
 
 </root>

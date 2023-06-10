@@ -124,6 +124,7 @@ def generate_dir():
     src_interface_path = src_path + '/interface'
     src_service_path = src_path + '/service'
     src_pb_path = src_path + '/pb'
+    src_stubs_path = src_path + '/stubs'
     src_comm_path = src_path + '/comm'
 
     dir_list = []
@@ -139,6 +140,7 @@ def generate_dir():
     dir_list.append(src_interface_path) 
     dir_list.append(src_service_path) 
     dir_list.append(src_pb_path) 
+    dir_list.append(src_stubs_path) 
     dir_list.append(src_comm_path) 
 
     for each in dir_list:

@@ -13,5 +13,14 @@
     <io_threads>4</io_threads>
   </server>
 
+  <stubs>
+    <rpc_server>
+      <name></name>
+      <ip></ip>
+      <port></port>
+      <timeout></timeout>
+    </rpc_server> 
+  </stubs>
+
 
 </root>
