@@ -31,17 +31,21 @@ namespace rocket {
 class RpcChannel : public google::protobuf::RpcChannel, public std::enable_shared_from_this<RpcChannel> {
  
  public:
-  typedef std::shared_ptr<RpcChannel> s_ptr;
-  typedef std::shared_ptr<google::protobuf::RpcController> controller_s_ptr;
-  typedef std::shared_ptr<google::protobuf::Message> message_s_ptr;
-  typedef std::shared_ptr<google::protobuf::Closure> closure_s_ptr;
+  typedef RpcChannel* s_ptr;
+  typedef google::protobuf::RpcController* controller_s_ptr;
+  typedef google::protobuf::Message* message_s_ptr;
+  typedef google::protobuf::Closure* closure_s_ptr;
 
  public:
-  RpcChannel(NetAddr::s_ptr peer_addr);
+  // 创建实例
+  static RpcChannel* Create(NetAddr::s_ptr peer_addr);
 
-  ~RpcChannel();
+  // 销毁实例
+  static void Destroy(RpcChannel* rpc_channel);
 
-  void Init(controller_s_ptr controller, message_s_ptr req, message_s_ptr res, closure_s_ptr done);
+ public:
+
+  // void Init(controller_s_ptr controller, message_s_ptr req, message_s_ptr res, closure_s_ptr done);
 
   void CallMethod(const google::protobuf::MethodDescriptor* method,
                           google::protobuf::RpcController* controller, const google::protobuf::Message* request,
@@ -60,21 +64,30 @@ class RpcChannel : public google::protobuf::RpcChannel, public std::enable_share
 
   TimerEvent::s_ptr getTimerEvent();
 
+  void callBack();
+
+ private:
+
+  // 析构函数设为私有，这样就无法在栈上创建对象，只能用 new
+  RpcChannel(NetAddr::s_ptr peer_addr);
+
+  // 析构函数设为私有，这样就无法在栈上创建对象，只能用 new
+  ~RpcChannel();
+
  private:
   NetAddr::s_ptr m_peer_addr {nullptr};
   NetAddr::s_ptr m_local_addr {nullptr};
 
-  controller_s_ptr m_controller {nullptr};
-  message_s_ptr m_request {nullptr};
-  message_s_ptr m_response {nullptr};
-  closure_s_ptr m_closure {nullptr};
+  google::protobuf::RpcController* m_controller {NULL};
+  google::protobuf::Message* m_request {NULL};
+  google::protobuf::Message* m_response {NULL};
+  google::protobuf::Closure* m_closure {NULL};
 
-  bool m_is_init {false};
+  // bool m_is_init {false};
 
   TcpClient::s_ptr m_client {nullptr};
 
   TimerEvent ::s_ptr m_timer_event{nullptr};
-
 
 };
 
