@@ -17,8 +17,12 @@ void test_tcp_server() {
 
 int main() {
 
-  rocket::Config::SetGlobalConfig("../conf/rocket.xml");
-  rocket::Logger::InitGlobalLogger();
+  // rocket::Config::SetGlobalConfig("../conf/rocket.xml");
+  // rocket::Logger::InitGlobalLogger();
+
+  rocket::Config::SetGlobalConfig(NULL);
+
+  rocket::Logger::InitGlobalLogger(0);
 
   test_tcp_server();
   

@@ -271,3 +271,247 @@ RPC 服务端流程
 
 
 
+# 常见问题
+## 1. 重要！！！ 库文件安装路径
+### 1.1 tinyxml
+以tinyxml 为例，tinyxml 分为库文件 `libtinyxml.a` 和头文件 `tinyxml/*.h`
+
+其中库文件一定需要安装在 `/usr/lib` 目录下，即绝对路径为 `/usr/lib/libtinyxml.a` ，如果不一致，请拷贝过去
+
+而头文件，所有 `*.h` 的头文件，必须位于 `tinyxml/` 目录下，而整个 `tinyxml` 目录需要放在 `usr/include` 下，即绝对路径为 `/usr/include/tinyxml`, `tinyxml` 下包含所有的 `.h` 结尾的头文件
+
+### 1.2 protobuf
+同 tinyxml，库文件在 `/usr/lib/libprotobuf.a`, 所有头文件 `*.h` 在 `/usr/include/google/protobuf/` 下
+
+
+## 2. 如何确保 protobuf 库安装成功？
+1. 确保头文件、库文件安装无误
+2. 确保能 执行 protoc 命令
+```
+[ikerli@localhost protobuf]$ protoc --version
+libprotoc 3.19.4
+```
+
+
+## 3. invalid version 3(max 0)
+出现此问题，一般是安装的 libtinyxml.a 有问题，使用以下代码替换原始 tinyxml 的makefile, 然后重装 libtinyxml.a
+```
+#****************************************************************************
+#
+# Makefile for TinyXml test.
+# Lee Thomason
+# www.grinninglizard.com
+#
+# This is a GNU make (gmake) makefile
+#****************************************************************************
+
+# DEBUG can be set to YES to include debugging info, or NO otherwise
+DEBUG          := NO
+
+# PROFILE can be set to YES to include profiling info, or NO otherwise
+PROFILE        := NO
+
+# TINYXML_USE_STL can be used to turn on STL support. NO, then STL
+# will not be used. YES will include the STL files.
+TINYXML_USE_STL := NO
+
+#****************************************************************************
+
+CC     := gcc
+CXX    := g++
+LD     := g++
+AR     := ar rc
+RANLIB := ranlib
+
+DEBUG_CFLAGS     := -Wall -Wno-format -g -DDEBUG
+RELEASE_CFLAGS   := -Wall -Wno-unknown-pragmas -Wno-format -O3
+
+LIBS		 :=
+
+DEBUG_CXXFLAGS   := ${DEBUG_CFLAGS} 
+RELEASE_CXXFLAGS := ${RELEASE_CFLAGS}
+
+DEBUG_LDFLAGS    := -g
+RELEASE_LDFLAGS  :=
+
+ifeq (YES, ${DEBUG})
+   CFLAGS       := ${DEBUG_CFLAGS}
+   CXXFLAGS     := ${DEBUG_CXXFLAGS}
+   LDFLAGS      := ${DEBUG_LDFLAGS}
+else
+   CFLAGS       := ${RELEASE_CFLAGS}
+   CXXFLAGS     := ${RELEASE_CXXFLAGS}
+   LDFLAGS      := ${RELEASE_LDFLAGS}
+endif
+
+ifeq (YES, ${PROFILE})
+   CFLAGS   := ${CFLAGS} -pg -O3
+   CXXFLAGS := ${CXXFLAGS} -pg -O3
+   LDFLAGS  := ${LDFLAGS} -pg
+endif
+
+#****************************************************************************
+# Preprocessor directives
+#****************************************************************************
+
+ifeq (YES, ${TINYXML_USE_STL})
+  DEFS := -DTIXML_USE_STL
+else
+  DEFS :=
+endif
+
+#****************************************************************************
+# Include paths
+#****************************************************************************
+
+#INCS := -I/usr/include/g++-2 -I/usr/local/include
+INCS :=
+
+
+#****************************************************************************
+# Makefile code common to all platforms
+#****************************************************************************
+
+CFLAGS   := ${CFLAGS}   ${DEFS}
+CXXFLAGS := ${CXXFLAGS} ${DEFS}
+
+#****************************************************************************
+# Targets of the build
+#****************************************************************************
+
+OUTPUT := libtinyxml.a 
+
+all: ${OUTPUT}
+
+
+#****************************************************************************
+# Source files
+#****************************************************************************
+
+SRCS := tinyxml.cpp tinyxmlparser.cpp xmltest.cpp tinyxmlerror.cpp tinystr.cpp
+
+# Add on the sources for libraries
+SRCS := ${SRCS}
+
+OBJS := $(addsuffix .o,$(basename ${SRCS}))
+
+#****************************************************************************
+# Output
+#****************************************************************************
+
+${OUTPUT}: ${OBJS}
+	${AR} $@ ${LDFLAGS} ${OBJS} ${LIBS} ${EXTRA_LIBS}
+
+#****************************************************************************
+# common rules
+#****************************************************************************
+
+# Rules for compiling source files to object files
+%.o : %.cpp
+	${CXX} -c ${CXXFLAGS} ${INCS} $< -o $@
+
+%.o : %.c
+	${CC} -c ${CFLAGS} ${INCS} $< -o $@
+
+dist:
+	bash makedistlinux
+
+clean:
+	-rm -f core ${OBJS} ${OUTPUT}
+
+depend:
+	#makedepend ${INCS} ${SRCS}
+
+tinyxml.o: tinyxml.h tinystr.h
+tinyxmlparser.o: tinyxml.h tinystr.h
+xmltest.o: tinyxml.h tinystr.h
+tinyxmlerror.o: tinyxml.h tinystr.h
+```
+
+## 4. multiple definition of __TMC_END__
+编译时出现以下多重定义错误
+![](./imgs/multiple_definition.jpg)
+
+处理方法同问题3，重新安装 libtinyxml.a 即可
+
+
+## 5. testcases/order.pb.cc: No such file or directory
+```
+-Wno-unused-but-set-variable -I./ -Irocket  -Irocket/common -Irocket/net -Irocket/net/tcp -Irocket/net/coder -Irocket/net/rpc testcases/test_rpc_client.cc testcases/order.pb.cc -o bin/test_rpc_client lib/librocket.a /usr/lib/libprotobuf.a    /usr/lib/libtinyxml.a -ldl -pthread
+g++: error: testcases/order.pb.cc: No such file or directory
+make: *** [makefile:71: bin/test_rpc_client] Error 1
+make: *** Waiting for unfinished jobs....
+```
+出现此错误时，是因为本地没有用 `protoc` 命令生成文件，需要执行：
+```
+cd testcases
+protoc --cpp_out=./ order.proto
+```
+观察是否在当前目录生成了 `order.pb.h` 和 `order.pb.cc` 两个文件，生成成功后重新编译
+
+## 6. 重要! 目录层次结构
+**请一定保持一样的目录结构，最外层的文件夹命名可以任意.**
+```
+rocket
+  - bin
+    -- 存放测试程序，可执行程序
+  - conf
+    -- 存放测试用的xml配置文件
+  - lib
+    -- 存放编译完成的静态库 librocket.a
+  - obj
+    -- 存放所有编译主键文件，*.o
+  - rocket
+    -- 存放所有源代码
+  - testcases
+    -- 存放测试代码
+```
+
+
+## x. 其他问题？如果是代码崩溃异常退出，请提供 gdb 的堆栈信息
+假设可执行文件为 x
+```
+执行 gdb x
+执行 r 命令，直到崩溃此时 gdb 会暂停
+执行 bt 命令，打印出函数调用堆栈信息，尝试自己先分析，如果分析不出来可以提供给我
+```
+
+# 代码设计问题
+## 1. RPC 框架是啥，这个项目最终到底产出了什么，作用是啥？
+RPC 原理不再解释，需要的看一看博客：
+https://www.zhihu.com/question/41609070/answer/2394467493
+
+整个项目的产出，是一个库文件 `librocket.a` 和一系列头文件`rocket/*.h`. 库文件不是可执行程序，不能直接运行。
+
+如何使用这个框架，其实就跟使用libtinyxml 一样，需要写一个服务，编译时引入其头文件，链接时使用其库文件。
+
+当然，rocket 提供了更加优质的封装，使用了代码生成器 `generator`，能够一键生成 RPC 服务代码，帮助我们写好 makefile、框架代码等等逻辑。
+
+## 2. 为什么要有配置文件？为什么用 xml 不用 json？
+
+配置文件是为了跟代码解耦开，将一些常量，如 ip, port 等写入到配置文件中，程序启动时加载配置，实现代码与配置分离。
+如果没有配置文件，假设你需要修改端口，就必须修改代码，然后重新make编译，再生成可执行文件，再重启。
+
+而有了配置文件，只需要修改配置文件，然后重启服务即可。
+
+为什么用 xml 不用其他？
+方便好用，用其他配置效果是一样的，而且本身是启动时加载配置，效率不是重点，简单起见就用 xml 好了。
+
+## 3. 为什么用 Reactor? 原理是什么？
+https://zhuanlan.zhihu.com/p/428693405
+
+## 4. wakeup fd 作用？
+先搞清楚 Reactor 的原理，再来看这个问题。
+在某些场景下，例如主从 Reactor 时。mainReactor 复制 listenfd 的监听，当客户端新连接过来时，accept获取 clientfd，然后把 clientfd 随机分配给一个 subReactor，由这个 subReactor 负责clientfd的后续读写操作。
+
+而对于 subReactor 来说，它一直在不断执行 loop 循环，没有 IO 事件发生时都会沉睡在 epoll_wait 上。假设 mainReactor 向某个 subReactor 添加 fd 的时候，subReactor正在 epoll_wait 沉睡，就会造成处理这个clientfd 延迟。
+为了解决这个延迟，mainReactor 在添加clientfd给 subReactor 时，需要某种机制，把 subReactor 从 epoll_wait 唤醒，这个唤醒动作就叫 wakeup
+
+如何实现唤醒，就是用 IO 事件触发，因此每个 Reactor 需要监听一个特殊的 wakeupfd 的可读事件，当需要唤醒时，只需要往这个 wakeupfd 里面写入数据，wakeupfd 马上变得可读，epoll_wait 就马上监听到可读事件，立马返回了。返回之后，就可以处理当前待执行任务。
+
+## 5. timer 作用？
+定时器作用不再多数，网络程序中经常需要一些定时任务、周期任务，就需要靠 tiemr 实现。
+定时器原理是 timerfd，建议 google 搜索一下 timerfd 了解其原理。
+本质上他就是一个 fd，给他设置一个时间戳，到达这个时间戳后 fd 变得可读，epoll_wait 监听到可读后马上返回，即可执行其上面的定时任务。
+
+定时任务按照触发时间戳升序排列，即越靠前的任务，其越早被执行。因此，我们只需要动态维护 timerfd 的触发时间戳为定时任务队列中第一个任务的时间即可。

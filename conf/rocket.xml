@@ -15,10 +15,12 @@
 
   <stubs>
     <rpc_server>
-      <name></name>
-      <ip></ip>
-      <port></port>
-      <timeout></timeout>
+      <!-- 默认配置 -->
+      <!-- 调用下游RPC 服务时，需要将其 ip port 配置在此处 -->
+      <name>default</name>
+      <ip>0.0.0.0</ip>
+      <port>12345</port>
+      <timeout>1000</timeout>
     </rpc_server> 
   </stubs>
 
