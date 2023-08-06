@@ -40,6 +40,11 @@ class OrderImpl : public Order {
     }
     response->set_order_id("20230514");
     APPDEBUGLOG("call makeOrder success");
+    if (done) {
+      done->Run();
+      delete done;
+      done = NULL;
+    }
   }
 
 };

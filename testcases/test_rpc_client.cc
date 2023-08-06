@@ -31,7 +31,7 @@
 
 void test_tcp_client() {
 
-  rocket::IPNetAddr::s_ptr addr = std::make_shared<rocket::IPNetAddr>("127.0.0.1", 12346);
+  rocket::IPNetAddr::s_ptr addr = std::make_shared<rocket::IPNetAddr>("127.0.0.1", 12345);
   rocket::TcpClient client(addr);
   client.connect([addr, &client]() {
     DEBUGLOG("conenct to [%s] success", addr->toString().c_str());
@@ -71,7 +71,7 @@ void test_tcp_client() {
 
 void test_rpc_channel() {
 
-  NEWRPCCHANNEL("127.0.0.1:12346", channel);
+  NEWRPCCHANNEL("127.0.0.1:12345", channel);
 
   // std::shared_ptr<makeOrderRequest> request = std::make_shared<makeOrderRequest>();
 
@@ -104,7 +104,7 @@ void test_rpc_channel() {
     channel.reset();
   });
 
-  CALLRPRC("127.0.0.1:12346", Order_Stub, makeOrder, controller, request, response, closure);
+  CALLRPRC("127.0.0.1:12345", Order_Stub, makeOrder, controller, request, response, closure);
 
   // xxx
   // 协程
