@@ -103,8 +103,17 @@ void test_rpc_channel() {
     // channel->getTcpClient()->stop();
     channel.reset();
   });
+  
+  {
+    std::shared_ptr<rocket::RpcChannel> channel = std::make_shared<rocket::RpcChannel>(rocket::RpcChannel::FindAddr("127.0.0.1:12345"));
+    ;
+    channel->Init(controller, request, response, closure);
+    Order_Stub(channel.get()).makeOrder(controller.get(), request.get(), response.get(), closure.get());
+  }
 
-  CALLRPRC("127.0.0.1:12345", Order_Stub, makeOrder, controller, request, response, closure);
+  // CALLRPRC("127.0.0.1:12345", Order_Stub, makeOrder, controller, request, response, closure);
+
+  
 
   // xxx
   // 协程
