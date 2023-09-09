@@ -477,6 +477,16 @@ rocket
 ```
 
 # 代码设计问题
+## 0. 项目的重点？
+rocket 是基于 C++11 开发的异步 RPC 框架，它的特点如下：
+- 性能高：主从 Reactor 架构，多线程并发处理. 底层通过 epoll 多路复用
+- 异步：支持异步 RPC 调用，主调方需要同步等待返回
+- 序列化：基于 Prtobuf 序列化数据，协议轻量化，传输效率高
+- 框架化：实现 Generator 代码生成器，一键生成 RPC 框架，提升开发效率.
+- 业务解耦：业务开发人员开箱即用，无需关注任何底层框架逻辑
+- 异步日志：日志支持按日期、大小滚动；并有异步线程负责输出，提升效率
+- 配置化：提供 xml 配置模块，启动时自加载配置文件 
+
 ## 1. RPC 是什么？
 RPC 原理见博客：
 https://www.zhihu.com/question/41609070/answer/2394467493
@@ -1241,7 +1251,7 @@ https://zhuanlan.zhihu.com/p/428693405
 定时任务按照触发时间戳升序排列，即越靠前的任务，其越早被执行。因此，我们只需要动态维护 timerfd 的触发时间戳为定时任务队列中第一个任务的时间即可。
 
 ## 11. RPC 如何实现的异步调用？
-参考 6.1 对 RPC 调用客户端的分析。
+参考 6.1 对 RPC 调用客户端的分析。客户端调用 RPC 时，只是将回调函数注册过去，后面的 connect、write、read 都是依靠 Reactor 异步进行的。
 
 ## 12. 为什么要基于 Protobuf 再定义 TinyPB 协议格式？
 Protobuf 只是一个序列化协议，得到一串二进制流，不具备可读性，甚至没办法区分。 
@@ -1260,4 +1270,52 @@ msgid 的作用，则是为了防止串包。在实现上我们保证一对 RPC 
 参考上个问题
 
 ## 14. 如何实现的 RPC 超时？
+首先，RPC 超时是作为客户端一方来说的，假设超时时间为 2s。那么只要从发起 RPC 调用后 2s 内客户端没有收到回包，说明调用超时了，此时客户端就需要拿到一个调用超时的失败结果，而不是继续等待。
+回到 rpc_channel 里面：
+```cpp {.line-numbers}
+void RpcChannel::CallMethod(const google::protobuf::MethodDescriptor* method,
+                        google::protobuf::RpcController* controller, const google::protobuf::Message* request,
+                        google::protobuf::Message* response, google::protobuf::Closure* done) {
+
+
+  // .... 省略
+  TimerEvent::s_ptr timer_event = std::make_shared<TimerEvent>(my_controller->GetTimeout(), false, [my_controller, channel]() mutable {
+    INFOLOG("%s | call rpc timeout arrive", my_controller->GetMsgId().c_str());
+    if (my_controller->Finished()) {
+      channel.reset();
+      return;
+    }
+
+    my_controller->StartCancel();
+    my_controller->SetError(ERROR_RPC_CALL_TIMEOUT, "rpc call timeout " + std::to_string(my_controller->GetTimeout()));
+
+    channel->callBack();
+    channel.reset();
+  });
+
+  m_client->addTimerEvent(timer_event);
+
+}
+```
+在调用 connect 等之前，首先注册了一个定时任务到 Reactor 上，这个定时任务会在执行超时时间触发(假设是 2s)，当2s过后，通过 controller->Finish() 判断是否已经完成 RPC 调用，如果已经完成，说明之前已经返回给客户端响应了，则不执行超时逻辑；否则认为触发了超时，此时将 controller 对应的错误码和错误信息设置为超时即可，这样客户端就能获取到超时的结果。
+
+换句话说，客户端对于一次 RPC 调用的结果是否超时，取决于是先收到回包，还是先触发超时。
+## 15. 如何理解 RPC 超时这个概念？
+
+对主调方来说，RPC 超时既不代表成功，也不代表失败，因为你无法判断此时究竟进行到哪一步了，是请求根本没发到对方？还是对方没处理完？还是对方没有回包？
+
+因此，决不可将 RPC 超时当做失败来处理。特别在敏感的业务场景下，例如调用支付接口扣款，如果出现超时，此时的做法应该是调用查询接口判断是否支付成功，或者重试直到成功(重试的前提是服务提供方需要保证幂等，支持重入，不会因为重试导致下了两笔单)，然后才执行后面的业务逻辑。
+
+## 16. 最多支持多少个连接，如何压测？
+首选，最多支持多少个连接，要看是理论上，还是实际上？
+从理论分析来看，一个TCP 连接我们可以看成四元组（src_ip, src_port, dst_ip, dst_port）。
+作为 RPC 服务端，其 dst_ip 和 dst_port 已经固定了，可变的只有 src_ip 和 src_port.
+而这两个组合起来就是 2^(16+32) 
+当然实际上，一台机器不可能支持那么多 TCP 连接，每一条连接总会消耗一定的系统资源，如内存资源，CPU 资源，或是文件描述符等。
+因此，实际上可支持的最大连接数，跟这些资源都强相关。要测试真实最大能支持到多少个，只要靠压测打满来测试。
+
+如何压测又是另外一个问题，在压测前，首先我们应该明确压测是要测什么。从这个RPC框架来说，我们压测主要是为了测试服务端的性能，准确来说是网络通信性能，而像协议解析等属于CPU密集型操作。
+因此，我们在进行压测时，选择 HTTP协议而不是 TinyPB 协议，因为协议解析不是重点。
+用 HTTP 压测有另外一个好处，可能找到很多线程的压测工具，如 wrk 等，这样就不需要自己写客户端来测试，同时测试的结果也更具备说服力。
+当然，前提是 RPC 框架需要支持HTTP 协议的解析，在当前是没有的，如果需要请参考另外一个项目 tinyrpc，此项目实现了简单的 HTTP 协议并且进行了压测。
 
