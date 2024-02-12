@@ -183,7 +183,7 @@ void TcpConnection::onWrite() {
 }
 
 void TcpConnection::setState(const TcpState state) {
-  m_state = Connected;
+  m_state = state;
 }
 
 TcpState TcpConnection::getState() {
